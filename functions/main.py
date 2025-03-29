@@ -6,6 +6,8 @@ from flask_cors import CORS  # CORS をインポート
 # Create safety response data with current timestamp
 from datetime import datetime
 
+from functions.firestore_insert_earthquakes import insert_earthquake_to_firestore
+
 # Try to import pytz, install if not available
 try:
     import pytz
@@ -123,7 +125,15 @@ def get_earthquakes():
 
 @app.route('/earthquakes/occur', methods=['POST'])
 def occur_earthquake():
-    occur_earthquake()
+    insert_earthquake_to_firestore(
+        epicenter="東京都千代田区外神田1-1-8",
+        intensity="震度7",
+        magnitude=7.0
+    )
+    return jsonify({
+        'success': True,
+        'message': '地震情報が正常に登録されました'
+    }), 200
 
 
 @app.route('/safetyPost', methods=['POST'])
