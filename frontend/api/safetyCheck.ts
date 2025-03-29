@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-interface SafetyCheckResponse {
+export interface SafetyCheckResponse {
   user_id: string;
   timestamp: string;
   status: string;
