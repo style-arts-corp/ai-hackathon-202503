@@ -2,6 +2,7 @@ from firebase_functions import https_fn
 from firebase_admin import initialize_app, firestore
 from flask import Flask, json, jsonify, request
 from json.decoder import JSONDecodeError
+from flask_cors import CORS  # CORS をインポート
 
 from earthquakes import get_earthquakes_mock
 
@@ -13,6 +14,8 @@ db = firestore.client()
 
 # Flaskアプリケーションの作成
 app = Flask(__name__)
+# すべてのルートでCORSを明示的に許可
+CORS(app, resources={r"/*": {"origins": "*"}})
 
 
 # Flaskルートの定義
