@@ -88,4 +88,4 @@ firebase deploy --only firestore
 
 ## local の API エンドポイント
 
-http://127.0.0.1:5001/ai-hackathon-202503/us-central1/on_request_example
+http://127.0.0.1:5001/ai-hackathon-202503/us-central1/api
