@@ -1,7 +1,6 @@
 "use client"
 
 import type React from "react"
-
 import { useState } from "react"
 import { CheckCircle2, AlertTriangle } from "lucide-react"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
@@ -17,7 +16,18 @@ export function SafetyConfirmationForm() {
     e.preventDefault()
     // In a real app, you would send this data to your backend
     console.log({ status })
-    setSubmitted(true)
+
+    // API からデータを取得
+    fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/hello`)
+      .then((response) => response.json())
+      .then((data) => {
+        console.log("API レスポンス:", data)
+        setSubmitted(true)
+      })
+      .catch((error) => {
+        console.error("API エラー:", error)
+        setSubmitted(true)
+      })
   }
 
   if (submitted) {
