@@ -3,6 +3,8 @@ from firebase_admin import initialize_app
 from flask import Flask, json, jsonify, request
 from json.decoder import JSONDecodeError
 
+from earthquakes import get_earthquakes_mock
+
 # Firebase初期化
 initialize_app()
 
@@ -48,6 +50,16 @@ def safety_check():
         return jsonify(error='Invalid JSON format'), 500
     except Exception as e:
         return jsonify(error=f'An unexpected error occurred: {str(e)}'), 500
+
+      
+@app.route('/earthquakes', methods=['GET'])
+def get_earthquakes():
+    return get_earthquakes_mock()
+
+
+@app.route('/earthquakes/occur', methods=['POST'])
+def occur_earthquake():
+    occur_earthquake()
 
 
 # Firebase Functionsのエントリーポイント
