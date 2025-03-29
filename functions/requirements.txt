@@ -1,5 +1,7 @@
+firebase-admin~=6.4.0
 firebase_functions~=0.4.2
 flask~=2.3.3
 gunicorn~=21.2.0
 openai
 python-dotenv~=1.0.1
+
