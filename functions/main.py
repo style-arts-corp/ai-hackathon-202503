@@ -6,7 +6,7 @@ from flask_cors import CORS  # CORS をインポート
 # Create safety response data with current timestamp
 from datetime import datetime
 
-from functions.firestore_insert_earthquakes import insert_earthquake_to_firestore
+from firestore_insert_earthquakes import insert_earthquake_to_firestore
 
 # Try to import pytz, install if not available
 try:

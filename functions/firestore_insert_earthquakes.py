@@ -10,37 +10,37 @@ def insert_earthquake_to_firestore(
     magnitude: float,
 ):
     try:
-        # Firebase初期化（ローカル環境用）
-        service_account_path = 'serviceAccountKey.json'
-
-        if not os.path.exists(service_account_path):
-            print(f"エラー: {service_account_path} が見つかりません。")
-            print("Firebase Consoleからサービスアカウントのキーをダウンロードして、このディレクトリに保存してください。")
-            return
+        print("Firebase初期化状態の確認...")
+        if not firebase_admin._apps:
+            print("Firebaseが初期化されていません。初期化を実行します。")
+            cred = credentials.Certificate('serviceAccountKey.json')
+            firebase_admin.initialize_app(cred)
         
-        cred = credentials.Certificate(service_account_path)
-        firebase_admin.initialize_app(cred)
-        
-        # Firestoreクライアントの初期化
+        id = str("EQ" + datetime.now(timezone.utc).strftime("%Y%m%d"))
+        print(f"生成されたID: {id}")
+        # Firestoreクライアントの初期化（既存のアプリケーションを使用）
         db = firestore.client()
+        print("Firestoreクライアントの初期化完了")
 
         # 各地震データをFirestoreに追加
-        earthquake_ref = db.collection('earthquakes').document()
-        earthquake_ref.set({
+        data = {
+            'id': id,
             'epicenter': epicenter,
             'intensity': intensity,
             'magnitude': magnitude,
-            'time': datetime.now(timezone.utc).isoformat(),
-        })
-        
-        # バッチコミット実行
-        earthquake_ref.commit()
-        
+            'time': firestore.SERVER_TIMESTAMP,
+        }
+        print(f"保存するデータ: {data}")
+        earthquake_ref = db.collection('earthquakes').document(id)
+        earthquake_ref.set(data)
+        print(f"ドキュメント参照: {earthquake_ref}")
         print(f"成功: 地震データがFirestoreに正常にインポートされました")
     
     except FileNotFoundError as e:
         print(f"エラー: ファイルが見つかりません - {e}")
-    except json.JSONDecodeError:
+    except json.JSONDecodeError as e:
+        print(f"エラー: JSONのデコードに失敗しました - {str(e)}")
+    except Exception as e:
         print(f"エラー: 予期しないエラーが発生しました - {str(e)}")
 
 def import_earthquakes_to_firestore():
