@@ -1,0 +1,127 @@
+[
+    {
+        "user1_id": "USR01235",
+        "user2_id": "USR01236",
+        "created_at": "2023-10-15T14:23:45+09:00"
+    },
+    {
+        "user1_id": "USR01235",
+        "user2_id": "USR12345",
+        "created_at": "2023-11-05T09:42:18+09:00"
+    },
+    {
+        "user1_id": "USR01236",
+        "user2_id": "USR01237",
+        "created_at": "2023-08-22T16:35:51+09:00"
+    },
+    {
+        "user1_id": "USR01236",
+        "user2_id": "USR23456",
+        "created_at": "2024-01-12T10:15:33+09:00"
+    },
+    {
+        "user1_id": "USR01237",
+        "user2_id": "USR67890",
+        "created_at": "2023-12-03T18:27:39+09:00"
+    },
+    {
+        "user1_id": "USR12345",
+        "user2_id": "USR23456",
+        "created_at": "2023-07-19T11:09:25+09:00"
+    },
+    {
+        "user1_id": "USR12345",
+        "user2_id": "USR34567",
+        "created_at": "2023-09-28T15:40:12+09:00"
+    },
+    {
+        "user1_id": "USR12345",
+        "user2_id": "USR45678",
+        "created_at": "2024-02-03T13:22:57+09:00"
+    },
+    {
+        "user1_id": "USR23456",
+        "user2_id": "USR56789",
+        "created_at": "2023-10-30T08:54:21+09:00"
+    },
+    {
+        "user1_id": "USR23456",
+        "user2_id": "USR67890",
+        "created_at": "2024-01-25T17:38:44+09:00"
+    },
+    {
+        "user1_id": "USR34567",
+        "user2_id": "USR78901",
+        "created_at": "2023-11-15T19:05:33+09:00"
+    },
+    {
+        "user1_id": "USR45678",
+        "user2_id": "USR89012",
+        "created_at": "2023-08-09T12:47:19+09:00"
+    },
+    {
+        "user1_id": "USR56789",
+        "user2_id": "USR90123",
+        "created_at": "2023-12-22T09:31:28+09:00"
+    },
+    {
+        "user1_id": "USR67890",
+        "user2_id": "USR01234",
+        "created_at": "2024-02-17T16:19:52+09:00"
+    },
+    {
+        "user1_id": "USR78901",
+        "user2_id": "USR89012",
+        "created_at": "2023-09-05T14:38:11+09:00"
+    },
+    {
+        "user1_id": "USR78901",
+        "user2_id": "USR90123",
+        "created_at": "2023-11-28T10:26:37+09:00"
+    },
+    {
+        "user1_id": "USR89012",
+        "user2_id": "USR01234",
+        "created_at": "2024-01-08T15:53:49+09:00"
+    },
+    {
+        "user1_id": "USR90123",
+        "user2_id": "USR01235",
+        "created_at": "2023-10-10T11:42:15+09:00"
+    },
+    {
+        "user1_id": "USR01234",
+        "user2_id": "USR01236",
+        "created_at": "2023-12-15T09:18:27+09:00"
+    },
+    {
+        "user1_id": "USR01235",
+        "user2_id": "USR34567",
+        "created_at": "2024-03-01T13:55:40+09:00"
+    },
+    {
+        "user1_id": "USR23456",
+        "user2_id": "USR90123",
+        "created_at": "2024-02-28T16:12:33+09:00"
+    },
+    {
+        "user1_id": "USR45678",
+        "user2_id": "USR01237",
+        "created_at": "2023-11-12T18:29:51+09:00"
+    },
+    {
+        "user1_id": "USR67890",
+        "user2_id": "USR78901",
+        "created_at": "2024-01-19T10:47:23+09:00"
+    },
+    {
+        "user1_id": "USR12345",
+        "user2_id": "USR90123",
+        "created_at": "2023-09-14T14:36:18+09:00"
+    },
+    {
+        "user1_id": "USR56789",
+        "user2_id": "USR01234",
+        "created_at": "2024-02-10T11:23:45+09:00"
+    }
+]

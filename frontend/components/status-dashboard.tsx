@@ -1,27 +1,78 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { CheckCircle2, AlertTriangle, HelpCircle, Search } from "lucide-react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
+// ユーザーデータをインポート
+import usersData from "./mocks/users.json"
 
-// Mock data for demonstration
-const mockStatuses = [
-  { id: 1, name: "田中 一郎", status: "safe", timestamp: "2023-09-01 14:30", location: "東京都中央区" },
-  { id: 2, name: "佐藤 花子", status: "help", timestamp: "2023-09-01 14:15", location: "東京都新宿区" },
-  { id: 3, name: "鈴木 健太", status: "unknown", timestamp: "2023-09-01 13:45", location: "不明" },
-  { id: 4, name: "伊藤 美咲", status: "safe", timestamp: "2023-09-01 13:30", location: "東京都渋谷区" },
-  { id: 5, name: "高橋 誠", status: "safe", timestamp: "2023-09-01 13:00", location: "東京都品川区" },
-]
+// APIから取得するデータの型定義
+type SafetyStatus = {
+  id: number
+  name: string
+  status: "SAFE" | "NEED_HELP" | "UNKNOWN"
+  timestamp: string
+  location: string
+  user_id: string
+}
+
+// ユーザー情報の型定義
+type User = {
+  id: string
+  name: string
+  address: string
+}
 
 export function StatusDashboard() {
   const [searchQuery, setSearchQuery] = useState("")
+  const [statuses, setStatuses] = useState<SafetyStatus[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const [users, setUsers] = useState<User[]>([])
 
-  const filteredStatuses = mockStatuses.filter((status) =>
-    status.name.toLowerCase().includes(searchQuery.toLowerCase()),
-  )
+  useEffect(() => {
+    // ユーザーデータをセット
+    setUsers(usersData as User[])
+
+    const fetchStatuses = async () => {
+      try {
+        setLoading(true)
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/safetyCheck`)
+        
+        if (!response.ok) {
+          throw new Error(`APIエラー: ${response.status}`)
+        }
+        
+        const data = await response.json()
+        setStatuses(data.user_data)
+        setError(null)
+      } catch (err) {
+        console.error("安否情報の取得に失敗しました:", err)
+        setError("安否情報の取得に失敗しました。後でもう一度お試しください。")
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchStatuses()
+  }, [])
+
+  // ユーザーIDからユーザー情報を取得する関数
+  const getUserById = (userId: string): User | undefined => {
+    return users.find(user => user.id === userId)
+  }
+
+  // 検索クエリに基づいて安否ステータスをフィルタリング
+  const filteredStatuses = statuses?.filter((status) => {
+    const user = getUserById(status.user_id)
+    if (!user) return false
+    
+    return user.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
+           status.user_id.toLowerCase().includes(searchQuery.toLowerCase())
+  })
 
   const getStatusIcon = (status: string) => {
     switch (status) {
@@ -38,14 +89,12 @@ export function StatusDashboard() {
 
   const getStatusText = (status: string) => {
     switch (status) {
-      case "safe":
+      case "SAFE":
         return "安全"
-      case "help":
+      case "NEED_HELP":
         return "支援が必要"
-      case "unknown":
-        return "不明"
       default:
-        return ""
+        return "不明"
     }
   }
 
@@ -86,30 +135,39 @@ export function StatusDashboard() {
         </div>
       </CardHeader>
       <CardContent>
-        <div className="space-y-4">
-          {filteredStatuses.length > 0 ? (
-            filteredStatuses.map((person) => (
-              <div key={person.id} className="flex items-center justify-between border-b pb-3">
-                <div className="flex items-center space-x-3">
-                  <Avatar>
-                    <AvatarFallback>{getInitials(person.name)}</AvatarFallback>
-                  </Avatar>
-                  <div>
-                    <p className="font-medium">{person.name}</p>
-                    <p className="text-sm text-muted-foreground">{person.location}</p>
-                    <p className="text-xs text-muted-foreground">{person.timestamp}</p>
+        {loading ? (
+          <div className="text-center py-4">データを読み込み中...</div>
+        ) : error ? (
+          <div className="text-center py-4 text-red-500">{error}</div>
+        ) : (
+          <div className="space-y-4">
+            {filteredStatuses.length > 0 ? (
+              filteredStatuses.map((status) => {
+                const user = getUserById(status.user_id)
+                return (
+                  <div key={status.id} className="flex items-center justify-between border-b pb-3">
+                    <div className="flex items-center space-x-3">
+                      <Avatar>
+                        <AvatarFallback>{user ? getInitials(user.name) : "??"}</AvatarFallback>
+                      </Avatar>
+                      <div>
+                        <p className="font-medium">{user ? user.name : "不明なユーザー"}</p>
+                        <p className="text-sm text-muted-foreground">{status.location}</p>
+                        <p className="text-xs text-muted-foreground">{status.timestamp}</p>
+                      </div>
+                    </div>
+                    <Badge className={`flex items-center gap-1 ${getStatusColor(status.status)}`}>
+                      {getStatusIcon(status.status)}
+                      {getStatusText(status.status)}
+                    </Badge>
                   </div>
-                </div>
-                <Badge className={`flex items-center gap-1 ${getStatusColor(person.status)}`}>
-                  {getStatusIcon(person.status)}
-                  {getStatusText(person.status)}
-                </Badge>
-              </div>
-            ))
-          ) : (
-            <div className="text-center py-4 text-muted-foreground">該当する結果がありません</div>
-          )}
-        </div>
+                )
+              })
+            ) : (
+              <div className="text-center py-4 text-muted-foreground">該当する結果がありません</div>
+            )}
+          </div>
+        )}
       </CardContent>
     </Card>
   )
