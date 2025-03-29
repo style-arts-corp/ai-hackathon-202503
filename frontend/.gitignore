@@ -9,5 +9,4 @@ package-lock.json
 yarn.lock
 
 # Other
-.env
 .DS_Store
