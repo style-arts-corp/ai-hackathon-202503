@@ -3,20 +3,9 @@ from firebase_functions import https_fn
 from firebase_admin import initialize_app, firestore, credentials
 from flask import Flask, json, jsonify, request
 from json.decoder import JSONDecodeError
-from flask_cors import CORS  # CORS をインポート
-# Create safety response data with current timestamp
+from flask_cors import CORS
 from datetime import datetime
-
-# Try to import pytz, install if not available
-try:
-    import pytz
-except ImportError:
-    import subprocess
-    import sys
-    print("Installing pytz module...")
-    subprocess.check_call([sys.executable, "-m", "pip", "install", "pytz"])
-    import pytz
-
+import pytz
 from earthquakes import get_earthquakes_mock
 
 # Firebase初期化 - Try to use service account if available
@@ -74,134 +63,31 @@ def safety_check():
     try:
         # First, check if we have data in Firestore
         safety_collection = db.collection('safety_response_logs')
-        print("Attempting to fetch data from 'safety_response_logs'")
+        safety_docs = safety_collection.stream()
 
-        try:
-            safety_docs = list(safety_collection.stream())
-            print(f"Firestore query completed, found {len(safety_docs)} documents")
-        except Exception as firestore_error:
-            print(f"Firestore query error: {str(firestore_error)}")
-            safety_docs = []
+        # Convert Firestore documents to dictionaries
+        all_data = []
+        for doc in safety_docs:
+            data = doc.to_dict()
+            # Add document ID if needed
+            data['id'] = doc.id
+            all_data.append(data)
 
-        # If we have data in Firestore, use it
-        if safety_docs:
-            print(f"Processing {len(safety_docs)} documents from Firestore")
+        # Filter out USR01235 in Python code
+        filtered_data = all_data
+        # [
+        #     record for record in all_data
+        #     if record.get('user_id') != 'USR01235'
+        # ]
 
-            # Convert Firestore documents to dictionaries
-            all_data = []
-            for doc in safety_docs:
-                data = doc.to_dict()
-                # Add document ID if needed
-                data['id'] = doc.id
-                all_data.append(data)
+        # Sort by timestamp in descending order
+        sorted_data = sorted(
+            filtered_data,
+            key=lambda x: x.get('timestamp', ''),
+            reverse=True
+        )
 
-            print(f"Converted {len(all_data)} Firestore documents to dictionaries")
-
-            # Filter out USR01235 in Python code
-            filtered_data = [
-                record for record in all_data
-                if record.get('user_id') != 'USR01235'
-            ]
-            print(f"After filtering USR01235: {len(filtered_data)} records remain")
-
-            # Sort by timestamp in descending order
-            sorted_data = sorted(
-                filtered_data,
-                key=lambda x: x.get('timestamp', ''),
-                reverse=True
-            )
-
-            return jsonify(user_data=sorted_data)
-
-        # Fallback to JSON file if no Firestore data
-        else:
-            print("No documents found in Firestore, falling back to JSON file")
-            # Try different paths for the mock file
-            possible_paths = [
-                'mocks/safety_response_log.json',  # Relative to CWD
-                './mocks/safety_response_log.json',  # Explicit relative path
-                os.path.join(os.path.dirname(__file__), 'mocks/safety_response_log.json'),  # Absolute path based on script location
-            ]
-
-            json_path = None
-            for path in possible_paths:
-                if os.path.exists(path):
-                    json_path = path
-                    print(f"Found mock file at: {json_path}")
-                    break
-                else:
-                    print(f"Mock file not found at: {path}")
-
-            # If no valid path found, use the first one for error reporting
-            if json_path is None:
-                json_path = possible_paths[0]
-
-            # Check if file exists
-            if not os.path.exists(json_path):
-                print(f"Warning: JSON file not found at {json_path}")
-                print(f"Current working directory: {os.getcwd()}")
-                # List files in the mocks directory if it exists
-                mocks_dir = 'mocks'
-                if os.path.exists(mocks_dir):
-                    print(f"Files in {mocks_dir} directory: {os.listdir(mocks_dir)}")
-                return jsonify(error=f'Mock data file not found: {json_path}'), 404
-
-            try:
-                with open(json_path, 'r') as f:
-                    all_data = json.load(f)
-                    print(f"Loaded {len(all_data)} records from JSON file")
-
-                    # Debug: Print first few records to verify structure
-                    if all_data and len(all_data) > 0:
-                        print("First record structure:")
-                        print(json.dumps(all_data[0], indent=2))
-
-                    # Ensure all_data is a list
-                    if not isinstance(all_data, list):
-                        print("WARNING: all_data is not a list, converting...")
-                        if isinstance(all_data, dict):
-                            # If it's a dict with a data array
-                            if 'data' in all_data and isinstance(all_data['data'], list):
-                                all_data = all_data['data']
-                            else:
-                                # Convert dict to single-item list
-                                all_data = [all_data]
-
-                    # Filter out records where user_id is USR01235
-                    filtered_data = []
-                    for record in all_data:
-                        user_id = record.get('user_id')
-                        print(f"Processing record with user_id: {user_id}")
-                        if user_id != 'USR01235':
-                            filtered_data.append(record)
-
-                    print(f"After filtering USR01235: {len(filtered_data)} records remain")
-
-                    if not filtered_data:
-                        print("WARNING: No records remain after filtering!")
-                        # Return all data without filtering as a fallback
-                        print("Returning all data without filtering as fallback")
-                        filtered_data = all_data
-
-                    # Sort by timestamp in descending order
-                    try:
-                        sorted_data = sorted(
-                            filtered_data,
-                            key=lambda x: x.get('timestamp', ''),
-                            reverse=True
-                        )
-                    except Exception as sort_error:
-                        print(f"Error sorting data: {str(sort_error)}")
-                        # Return unsorted data as fallback
-                        sorted_data = filtered_data
-
-                    # Ensure we're returning a valid response
-                    # Important: Use jsonify with keyword arguments to ensure proper structure
-                    print(f"Returning {len(sorted_data)} records")
-                    return jsonify(user_data=sorted_data)
-            except json.JSONDecodeError as json_error:
-                print(f"JSON parsing error: {str(json_error)}")
-                return jsonify(error=f'Invalid JSON format in mock data: {str(json_error)}'), 500
+        return jsonify(user_data=sorted_data)
 
     except Exception as e:
         import traceback
