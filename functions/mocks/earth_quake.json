@@ -1,0 +1,58 @@
+[
+  {
+    "id": "EQ201102",
+    "time": "2011-03-11 14:46:23",
+    "epicenter": "宮城県牡鹿郡沖",
+    "intensity": "震度7",
+    "magnitude": 9.0
+  },
+  {
+    "id": "EQ199501",
+    "time": "1995-01-17 05:46:52",
+    "epicenter": "兵庫県神戸市",
+    "intensity": "震度7",
+    "magnitude": 7.3
+  },
+  {
+    "id": "EQ201604",
+    "time": "2016-04-16 01:25:05",
+    "epicenter": "熊本県熊本地方",
+    "intensity": "震度7",
+    "magnitude": 7.0
+  },
+  {
+    "id": "EQ202311",
+    "time": "2023-01-01 16:10:33",
+    "epicenter": "石川県能登地方",
+    "intensity": "震度7",
+    "magnitude": 7.6
+  },
+  {
+    "id": "EQ202208",
+    "time": "2022-08-14 09:43:12",
+    "epicenter": "茨城県南部",
+    "intensity": "震度4",
+    "magnitude": 4.6
+  },
+  {
+    "id": "EQ202312",
+    "time": "2023-12-05 19:22:48",
+    "epicenter": "千葉県東方沖",
+    "intensity": "震度3",
+    "magnitude": 4.2
+  },
+  {
+    "id": "EQ202403",
+    "time": "2024-03-10 07:15:33",
+    "epicenter": "福島県沖",
+    "intensity": "震度4",
+    "magnitude": 5.1
+  },
+  {
+    "id": "EQ202309",
+    "time": "2023-09-22 12:41:05",
+    "epicenter": "和歌山県北部",
+    "intensity": "震度3",
+    "magnitude": 3.8
+  }
+]
