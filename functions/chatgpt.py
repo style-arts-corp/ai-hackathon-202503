@@ -46,10 +46,9 @@ system_prompt = """
 - レベル5（最重要確認）: 推定震度7の地域で安否未確認、または震度6弱以上の地域で「危険」報告
 
 ## 出力形式
+危険度がレベル2以上（2-5）のアカウントのみを純粋なJSON形式で出力してください。
+コードブロックのマーカー（```）や説明文は一切含めず、以下の構造のJSONデータのみを出力してください：
 
-危険度がレベル2以上（2-5）のアカウントのみを以下のJSON形式で出力してください：
-
-```json
 [
     {
         "id": "アカウント名",
@@ -58,15 +57,17 @@ system_prompt = """
     {
         "id": "アカウント名",
         "status": 数値（2-5のいずれか）
-    },
-    ...
+    }
 ]
-```
-※ レベル1のアカウントは出力に含めないでください。 ※ statusフィールドには危険度レベルの数値（2〜5）のみを記載してください。
+
+※ レベル1のアカウントは出力に含めないでください。
+※ statusフィールドには危険度レベルの数値（2〜5）のみを記載してください。
+※ 出力にはJSONデータのみを含め、他の文字列や説明は一切含めないでください。
+
 
 # 入力データ形式
 ## アカウント情報
-```
+
 [
     {
         "name": "アカウント名",
@@ -80,40 +81,43 @@ system_prompt = """
         ]
     }
 ]
-```
+
 ## 地震情報
-```
 {
     "time": "YYYY-MM-DD HH:MM:SS",
     "epicenter": "震源地",
     "intensity": "震度（最大）",
     "magnitude": 0.0
 }
-```
+
 以上の情報を分析し、危険度レベル2以上のユーザーのIDと危険度を指定されたJSON形式で出力してください。分析情報や解説は含めないでください。
 
 """
 
 def consult_chatgpt(
     earthquake_info: dict,
-    account_info: list[dict],
+    users: list[dict],
     temperature: float = 0.7,
     max_tokens: Optional[int] = None,
     model: str = "gpt-4o",
-) -> str:
+) -> list[dict]:
     try:
+        users_info = []
+        for user in users:
+            status = user["safety_history"][-1]
+            if status["timestamp"] > earthquake_info["time"]:
+                if status["status"] == "安全":
+                    continue
+            users_info.append(user)
+
         user_prompt = f"""
         以下の地震情報とアカウント情報を分析し、危険な状態にあるユーザーを特定して危険度を評価してください。
 
         ## 地震情報
-        ```json
         {json.dumps(earthquake_info)}
-        ```
 
         ## アカウント情報
-        ```json
-        {json.dumps(account_info)}
-        ```
+        {json.dumps(users)}
         """
 
         # OpenAI APIクライアントの初期化
@@ -134,7 +138,7 @@ def consult_chatgpt(
         )
 
         # 応答を取得
-        return response.choices[0].message.content
+        return json.loads(response.choices[0].message.content)
 
     except Exception as e:
         raise Exception(f"ChatGPTとの通信中にエラーが発生しました: {str(e)}")
@@ -149,7 +153,7 @@ if __name__ == "__main__":
             "intensity": "震度7",
             "magnitude": 9.0
         },
-        account_info=[
+        users=[
             {
                 "name": "山口 友也",
                 "address": "東京都千代田区永田町1丁目1番1号",
@@ -163,8 +167,14 @@ if __name__ == "__main__":
             },
             {
                 "name": "相曽 結",
-                "address": "新潟県長岡市大手通1丁目1番1号",
-                "safety_history": []
+                "address": "福島県福島市",
+                "safety_history": [
+                    {
+                        "timestamp": "2025-03-10 14:56:00",
+                        "status": "安全",
+                        "location": "福島県福島市"
+                    }
+                ]
             }
         ]
     )
