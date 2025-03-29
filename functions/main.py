@@ -72,24 +72,43 @@ def get_users():
 @app.route('/safetyCheck', methods=['GET'])
 def safety_check():
     try:
-        # First, check if we have data in Firestore
+        # Get safety response data from Firestore
         safety_collection = db.collection('safety_response_logs')
         safety_docs = safety_collection.stream()
 
-        # Convert Firestore documents to dictionaries
+        # Convert to list of dictionaries
         all_data = []
         for doc in safety_docs:
             data = doc.to_dict()
-            # Add document ID if needed
             data['id'] = doc.id
             all_data.append(data)
 
-        # Filter out USR01235 in Python code
-        filtered_data = all_data
-        # [
-        #     record for record in all_data
-        #     if record.get('user_id') != 'USR01235'
-        # ]
+        # Filter out records where user_id is USR01235
+        filtered_data = [
+            record for record in all_data
+            if record.get('user_id') != 'USR01235'
+        ]
+
+        # Get user data from Firestore to match names
+        users_collection = db.collection('users')
+        users_docs = users_collection.stream()
+
+        # Create a dictionary of user_id to user data for quick lookup
+        users_dict = {}
+        for user_doc in users_docs:
+            user_data = user_doc.to_dict()
+            user_id = user_data.get('user_id')
+            if user_id:
+                users_dict[user_id] = user_data
+
+        # Add user name to each safety record
+        for record in filtered_data:
+            user_id = record.get('user_id')
+            if user_id and user_id in users_dict:
+                # Add user name and any other relevant user data
+                record['user_name'] = users_dict[user_id].get('name', 'Unknown')
+                # You can add more user fields if needed
+                # record['user_email'] = users_dict[user_id].get('email')
 
         # Sort by timestamp in descending order
         sorted_data = sorted(
@@ -188,9 +207,59 @@ def api(req: https_fn.Request) -> https_fn.Response:
 if __name__ == "__main__":
     print("Testing safety_check function directly...")
 
-    # Call the safety_check function
-    response = safety_check()
+    # Create an application context
+    with app.app_context():
+        try:
+            # Get safety response data from Firestore
+            safety_collection = db.collection('safety_response_logs')
+            safety_docs = safety_collection.stream()
 
-    # Print the response
-    print("Response:")
-    print(response.get_data(as_text=True))
+            print("Successfully connected to Firestore")
+
+            # Convert to list of dictionaries
+            all_data = []
+            for doc in safety_docs:
+                data = doc.to_dict()
+                data['id'] = doc.id
+                all_data.append(data)
+
+            print(f"Retrieved {len(all_data)} safety records")
+
+            # Filter out records where user_id is USR01235
+            filtered_data = [
+                record for record in all_data
+                if record.get('user_id') != 'USR01235'
+            ]
+
+            print(f"After filtering USR01235: {len(filtered_data)} records remain")
+
+            # Try to get user data
+            try:
+                users_collection = db.collection('users')
+                users_docs = users_collection.stream()
+                users_list = list(users_docs)
+                print(f"Retrieved {len(users_list)} user records")
+
+                # Print first user if available
+                if users_list:
+                    print("First user data:")
+                    print(users_list[0].to_dict())
+            except Exception as user_error:
+                print(f"Error retrieving users: {str(user_error)}")
+
+            # Sort by timestamp
+            sorted_data = sorted(
+                filtered_data,
+                key=lambda x: x.get('timestamp', ''),
+                reverse=True
+            )
+
+            # Print results
+            print("\nResults:")
+            for record in sorted_data[:3]:  # Print first 3 records
+                print(f"User ID: {record.get('user_id')}, Status: {record.get('status')}")
+
+        except Exception as e:
+            import traceback
+            print(f"Error: {str(e)}")
+            print(traceback.format_exc())
