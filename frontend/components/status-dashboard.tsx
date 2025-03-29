@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
-
+import { SafetyCheckResponse } from "@/api/safetyCheck"
 // Mock data for demonstration
 const mockStatuses = [
   { id: 1, name: "田中 一郎", status: "safe", timestamp: "2023-09-01 14:30", location: "東京都中央区" },
@@ -16,7 +16,9 @@ const mockStatuses = [
   { id: 5, name: "高橋 誠", status: "safe", timestamp: "2023-09-01 13:00", location: "東京都品川区" },
 ]
 
-export function StatusDashboard() {
+export function StatusDashboard(
+  // data: SafetyCheckResponse[]
+) {
   const [searchQuery, setSearchQuery] = useState("")
 
   const filteredStatuses = mockStatuses.filter((status) =>

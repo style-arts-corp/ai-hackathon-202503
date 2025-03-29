@@ -3,8 +3,11 @@ import { SafetyConfirmationForm } from "@/components/safety-confirmation-form"
 import { StatusDashboard } from "@/components/status-dashboard"
 import { Button } from "@/components/ui/button"
 import { User, Users } from "lucide-react"
+import { safetyCheck } from "@/api/safetyCheck"
 
-export default function Home() {
+export default async function Home() {
+  const data = await safetyCheck()
+  console.log(data)
   return (
     <main className="container mx-auto px-4 py-8">
       <div className="flex flex-col md:flex-row justify-between items-center mb-6">
@@ -29,7 +32,7 @@ export default function Home() {
           <SafetyConfirmationForm />
         </div>
         <div>
-          <StatusDashboard />
+          <StatusDashboard/>
         </div>
       </div>
     </main>
