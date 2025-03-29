@@ -1,7 +1,47 @@
+from datetime import datetime, timezone
 import firebase_admin
 from firebase_admin import credentials, firestore
 import json
 import os
+
+def insert_earthquake_to_firestore(
+    epicenter: str,
+    intensity: str,
+    magnitude: float,
+):
+    try:
+        print("Firebase初期化状態の確認...")
+        if not firebase_admin._apps:
+            print("Firebaseが初期化されていません。初期化を実行します。")
+            cred = credentials.Certificate('serviceAccountKey.json')
+            firebase_admin.initialize_app(cred)
+        
+        id = str("EQ" + datetime.now(timezone.utc).strftime("%Y%m%d"))
+        print(f"生成されたID: {id}")
+        # Firestoreクライアントの初期化（既存のアプリケーションを使用）
+        db = firestore.client()
+        print("Firestoreクライアントの初期化完了")
+
+        # 各地震データをFirestoreに追加
+        data = {
+            'id': id,
+            'epicenter': epicenter,
+            'intensity': intensity,
+            'magnitude': magnitude,
+            'time': firestore.SERVER_TIMESTAMP,
+        }
+        print(f"保存するデータ: {data}")
+        earthquake_ref = db.collection('earthquakes').document(id)
+        earthquake_ref.set(data)
+        print(f"ドキュメント参照: {earthquake_ref}")
+        print(f"成功: 地震データがFirestoreに正常にインポートされました")
+    
+    except FileNotFoundError as e:
+        print(f"エラー: ファイルが見つかりません - {e}")
+    except json.JSONDecodeError as e:
+        print(f"エラー: JSONのデコードに失敗しました - {str(e)}")
+    except Exception as e:
+        print(f"エラー: 予期しないエラーが発生しました - {str(e)}")
 
 def import_earthquakes_to_firestore():
     """

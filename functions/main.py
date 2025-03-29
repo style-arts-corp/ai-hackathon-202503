@@ -5,7 +5,18 @@ from flask import Flask, json, jsonify, request
 from json.decoder import JSONDecodeError
 from flask_cors import CORS
 from datetime import datetime
-import pytz
+
+from firestore_insert_earthquakes import insert_earthquake_to_firestore
+
+# Try to import pytz, install if not available
+try:
+    import pytz
+except ImportError:
+    import subprocess
+    import sys
+    print("Installing pytz module...")
+    subprocess.check_call([sys.executable, "-m", "pip", "install", "pytz"])
+    import pytz
 from earthquakes import get_earthquakes_mock
 
 # Firebase初期化 - Try to use service account if available
@@ -104,7 +115,15 @@ def get_earthquakes():
 
 @app.route('/earthquakes/occur', methods=['POST'])
 def occur_earthquake():
-    occur_earthquake()
+    insert_earthquake_to_firestore(
+        epicenter="東京都千代田区外神田1-1-8",
+        intensity="震度7",
+        magnitude=7.0
+    )
+    return jsonify({
+        'success': True,
+        'message': '地震情報が正常に登録されました'
+    }), 200
 
 
 @app.route('/safetyPost', methods=['POST'])

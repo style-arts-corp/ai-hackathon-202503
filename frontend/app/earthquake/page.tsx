@@ -1,5 +1,6 @@
 'use client';
 
+import { occurEarthQuake } from '@/api/occurEarthQuake';
 import { useState } from 'react';
 
 type Location = 'niigata' | 'tokyo';
@@ -19,6 +20,11 @@ export default function EarthquakePage() {
 
   const getLocationName = (loc: Location) => {
     return loc === 'niigata' ? '新潟' : '東京';
+  };
+
+  const handleOccurEarthQuake = async () => {
+    const response = await occurEarthQuake();
+    console.log(response);
   };
 
   return (
@@ -51,13 +57,13 @@ export default function EarthquakePage() {
 
         <div className="space-y-4">
           <button
-            onClick={() => triggerEarthquake(3)}
+            onClick={handleOccurEarthQuake}
             className="px-6 py-3 bg-yellow-500 text-white rounded-lg hover:bg-yellow-600 transition-colors w-full"
           >
             {getLocationName(location)}で震度3の地震を起こす
           </button>
           <button
-            onClick={() => triggerEarthquake(7)}
+            onClick={handleOccurEarthQuake}
             className="px-6 py-3 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors w-full"
           >
             {getLocationName(location)}で震度7の地震を起こす
