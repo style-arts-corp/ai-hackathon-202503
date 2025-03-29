@@ -17,7 +17,7 @@ except ImportError:
     print("Installing pytz module...")
     subprocess.check_call([sys.executable, "-m", "pip", "install", "pytz"])
     import pytz
-from earthquakes import get_earthquakes_mock
+from earthquakes import get_earthquake_latest, get_earthquakes_mock
 
 # Firebase初期化 - Try to use service account if available
 try:
@@ -72,33 +72,49 @@ def get_users():
 @app.route('/safetyCheck', methods=['GET'])
 def safety_check():
     try:
-        # First, check if we have data in Firestore
-        safety_collection = db.collection('safety_response_logs')
-        safety_docs = safety_collection.stream()
+        earthquake_latest = get_earthquake_latest()
+        print("地震最新データ: ", earthquake_latest)
+        if earthquake_latest:
+            # 現在時刻を取得
+            jst = pytz.timezone('Asia/Tokyo')
+            current_time = datetime.now(jst)
+            
+            # 地震の発生時刻をdatetimeオブジェクトに変換
+            earthquake_time = datetime.fromisoformat(earthquake_latest["time"].replace('Z', '+00:00'))
+            earthquake_time = earthquake_time.astimezone(jst)
+            
+            # 5分以内かチェック
+            time_diff = (current_time - earthquake_time).total_seconds() / 60
+            if time_diff <= 5:
+                # First, check if we have data in Firestore
+                safety_collection = db.collection('safety_response_logs')
+                safety_docs = safety_collection.stream()
 
-        # Convert Firestore documents to dictionaries
-        all_data = []
-        for doc in safety_docs:
-            data = doc.to_dict()
-            # Add document ID if needed
-            data['id'] = doc.id
-            all_data.append(data)
+                # Convert Firestore documents to dictionaries
+                all_data = []
+                for doc in safety_docs:
+                    data = doc.to_dict()
+                    # Add document ID if needed
+                    data['id'] = doc.id
+                    all_data.append(data)
 
-        # Filter out USR01235 in Python code
-        filtered_data = all_data
-        # [
-        #     record for record in all_data
-        #     if record.get('user_id') != 'USR01235'
-        # ]
+                # Filter out USR01235 in Python code
+                filtered_data = all_data
+                # [
+                #     record for record in all_data
+                #     if record.get('user_id') != 'USR01235'
+                # ]
 
-        # Sort by timestamp in descending order
-        sorted_data = sorted(
-            filtered_data,
-            key=lambda x: x.get('timestamp', ''),
-            reverse=True
-        )
+                # Sort by timestamp in descending order
+                sorted_data = sorted(
+                    filtered_data,
+                    key=lambda x: x.get('timestamp', ''),
+                    reverse=True
+                )
 
-        return jsonify(user_data=sorted_data)
+                return jsonify(user_data=sorted_data)
+            else:
+                return jsonify(data=[])
 
     except Exception as e:
         import traceback
