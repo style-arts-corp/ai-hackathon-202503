@@ -3,6 +3,8 @@ from firebase_admin import initialize_app, firestore
 from flask import Flask, json, jsonify, request
 from json.decoder import JSONDecodeError
 
+from earthquakes import get_earthquakes_mock
+
 # Firebase初期化
 initialize_app()
 
@@ -81,6 +83,30 @@ def import_users_to_firestore():
             'success': False,
             'error': f'予期しないエラーが発生しました: {str(e)}'
         }), 500
+
+
+@app.route('/safetyCheck', methods=['GET'])
+def safety_check():
+    try:
+        with open('mocks/safety_response_log.json', 'r') as f:
+            user_data = json.load(f)
+            return jsonify(user_data=user_data)  # 再度確認：キーワード引数のみ
+    except FileNotFoundError:
+        return jsonify(error='User data not found'), 404
+    except JSONDecodeError:
+        return jsonify(error='Invalid JSON format'), 500
+    except Exception as e:
+        return jsonify(error=f'An unexpected error occurred: {str(e)}'), 500
+
+      
+@app.route('/earthquakes', methods=['GET'])
+def get_earthquakes():
+    return get_earthquakes_mock()
+
+
+@app.route('/earthquakes/occur', methods=['POST'])
+def occur_earthquake():
+    occur_earthquake()
 
 
 # Firebase Functionsのエントリーポイント
