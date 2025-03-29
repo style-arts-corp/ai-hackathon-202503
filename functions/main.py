@@ -3,6 +3,9 @@ from firebase_admin import initialize_app, firestore
 from flask import Flask, json, jsonify, request
 from json.decoder import JSONDecodeError
 from flask_cors import CORS  # CORS をインポート
+# Create safety response data with current timestamp
+from datetime import datetime
+import pytz
 
 from earthquakes import get_earthquakes_mock
 
@@ -44,56 +47,17 @@ def get_users():
         return jsonify(error=f'An unexpected error occurred: {str(e)}'), 500
 
 
-@app.route('/import-users-to-firestore', methods=['POST'])
-def import_users_to_firestore():
-    try:
-        # users.jsonからデータを読み込む
-        with open('mocks/users.json', 'r', encoding='utf-8') as f:
-            users = json.load(f)
-        
-        # Firestoreのバッチ処理を初期化
-        batch = db.batch()
-        
-        # 追加されたユーザー数をカウント
-        added_count = 0
-        
-        # 各ユーザーをFirestoreに追加
-        for user in users:
-            user_ref = db.collection('users').document(user['id'])
-            batch.set(user_ref, user)
-            added_count += 1
-        
-        # バッチコミット実行
-        batch.commit()
-        
-        return jsonify({
-            'success': True,
-            'message': f'{added_count}人のユーザーデータがFirestoreに正常にインポートされました'
-        })
-    
-    except FileNotFoundError:
-        return jsonify({
-            'success': False,
-            'error': 'ユーザーデータファイルが見つかりません'
-        }), 404
-    except JSONDecodeError:
-        return jsonify({
-            'success': False, 
-            'error': 'JSONフォーマットが無効です'
-        }), 500
-    except Exception as e:
-        return jsonify({
-            'success': False,
-            'error': f'予期しないエラーが発生しました: {str(e)}'
-        }), 500
-
-
 @app.route('/safetyCheck', methods=['GET'])
 def safety_check():
     try:
         with open('mocks/safety_response_log.json', 'r') as f:
-            user_data = json.load(f)
-            return jsonify(user_data=user_data)  # 再度確認：キーワード引数のみ
+            all_data = json.load(f)
+            # Filter out records where user_id is USR01235
+            filtered_data = [
+                record for record in all_data
+                if record.get('user_id') != 'USR01235'
+            ]
+            return jsonify(user_data=filtered_data)  # 再度確認：キーワード引数のみ
     except FileNotFoundError:
         return jsonify(error='User data not found'), 404
     except JSONDecodeError:
@@ -101,7 +65,7 @@ def safety_check():
     except Exception as e:
         return jsonify(error=f'An unexpected error occurred: {str(e)}'), 500
 
-      
+
 @app.route('/earthquakes', methods=['GET'])
 def get_earthquakes():
     return get_earthquakes_mock()
@@ -112,6 +76,55 @@ def occur_earthquake():
     occur_earthquake()
 
 
+@app.route('/safetyPost', methods=['POST'])
+def safety_post():
+    try:
+        # Get data from request
+        request_data = request.get_json()
+
+        if not request_data:
+            return jsonify({
+                'success': False,
+                'error': 'リクエストデータが見つかりません'
+            }), 400
+
+        # Extract required fields
+        status = request_data.get('status')
+
+        # Validate required fields
+        if not status:
+            return jsonify({
+                'success': False,
+                'error': '必須フィールドが不足しています (user_id, location, status)'
+            }), 400
+
+        # Get current time in JST timezone
+        jst = pytz.timezone('Asia/Tokyo')
+        current_time = datetime.now(jst).isoformat()
+
+        safety_data = {
+            'user_id': "USR01235",
+            'timestamp': current_time,
+            'status': status,
+            'location': "東京都千代田区外神田1-1-8"
+        }
+
+        # Add data to Firestore
+        db.collection('safety_response_log').add(safety_data)
+
+        return jsonify({
+            'success': True,
+            'message': '安否情報が正常に記録されました',
+            'data': safety_data
+        })
+
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': f'予期しないエラーが発生しました: {str(e)}'
+        }), 500
+
+
 # Firebase Functionsのエントリーポイント
 @https_fn.on_request()
 def api(req: https_fn.Request) -> https_fn.Response:
@@ -119,4 +132,4 @@ def api(req: https_fn.Request) -> https_fn.Response:
     with app.request_context(req.environ):
         return app.full_dispatch_request()
 
-#http://127.0.0.1:5001/ai-hackathon-202503/us-central1/api/
+# http://127.0.0.1:5001/ai-hackathon-202503/us-central1/api/
