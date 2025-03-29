@@ -18,16 +18,22 @@ export function SafetyConfirmationForm() {
     console.log({ status })
 
     // API からデータを取得
-    fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/hello`)
-      .then((response) => response.json())
-      .then((data) => {
-        console.log("API レスポンス:", data)
-        setSubmitted(true)
+      fetch(`${process.env.NEXT_PUBLIC_API_URL}/safetyPost`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ status })
       })
-      .catch((error) => {
-        console.error("API エラー:", error)
-        setSubmitted(true)
-      })
+        .then((response) => response.json())
+        .then((data) => {
+          console.log("API レスポンス:", data)
+          setSubmitted(true)
+        })
+        .catch((error) => {
+          console.error("API エラー:", error)
+          setSubmitted(true)
+        })
   }
 
   if (submitted) {
