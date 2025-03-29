@@ -1,0 +1,13 @@
+# Next.js
+.next/
+out/
+build/
+
+# Node.js
+node_modules/
+package-lock.json
+yarn.lock
+
+# Other
+.env
+.DS_Store
