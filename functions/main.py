@@ -1,9 +1,9 @@
+import os
 from firebase_functions import https_fn
-from firebase_admin import initialize_app, firestore
+from firebase_admin import initialize_app, firestore, credentials
 from flask import Flask, json, jsonify, request
 from json.decoder import JSONDecodeError
-from flask_cors import CORS  # CORS をインポート
-# Create safety response data with current timestamp
+from flask_cors import CORS
 from datetime import datetime
 
 from firestore_insert_earthquakes import insert_earthquake_to_firestore
@@ -17,11 +17,22 @@ except ImportError:
     print("Installing pytz module...")
     subprocess.check_call([sys.executable, "-m", "pip", "install", "pytz"])
     import pytz
-
 from earthquakes import get_earthquakes_mock
 
-# Firebase初期化
-initialize_app()
+# Firebase初期化 - Try to use service account if available
+try:
+    service_account_path = 'serviceAccountKey.json'
+    if os.path.exists(service_account_path):
+        print(f"Using service account: {service_account_path}")
+        cred = credentials.Certificate(service_account_path)
+        initialize_app(cred)
+    else:
+        print("Service account file not found, using default initialization")
+        initialize_app()
+except Exception as e:
+    print(f"Firebase initialization error: {str(e)}")
+    # Still try to initialize without credentials as fallback
+    initialize_app()
 
 # Firestoreクライアントの初期化
 db = firestore.client()
@@ -62,59 +73,38 @@ def get_users():
 def safety_check():
     try:
         # First, check if we have data in Firestore
-        safety_collection = db.collection('safety_response_log')
-        safety_docs = list(safety_collection.stream())
+        safety_collection = db.collection('safety_response_logs')
+        safety_docs = safety_collection.stream()
 
-        # If we have data in Firestore, use it
-        if safety_docs:
-            print(f"Found {len(safety_docs)} documents in Firestore")
+        # Convert Firestore documents to dictionaries
+        all_data = []
+        for doc in safety_docs:
+            data = doc.to_dict()
+            # Add document ID if needed
+            data['id'] = doc.id
+            all_data.append(data)
 
-            # Convert Firestore documents to dictionaries
-            all_data = []
-            for doc in safety_docs:
-                data = doc.to_dict()
-                # Add document ID if needed
-                data['id'] = doc.id
-                all_data.append(data)
+        # Filter out USR01235 in Python code
+        filtered_data = all_data
+        # [
+        #     record for record in all_data
+        #     if record.get('user_id') != 'USR01235'
+        # ]
 
-            # Filter out USR01235 in Python code
-            filtered_data = [
-                record for record in all_data
-                if record.get('user_id') != 'USR01235'
-            ]
+        # Sort by timestamp in descending order
+        sorted_data = sorted(
+            filtered_data,
+            key=lambda x: x.get('timestamp', ''),
+            reverse=True
+        )
 
-            # Sort by timestamp in descending order
-            sorted_data = sorted(
-                filtered_data,
-                key=lambda x: x.get('timestamp', ''),
-                reverse=True
-            )
-
-            return jsonify(user_data=sorted_data)
-
-        # Fallback to JSON file if no Firestore data
-        else:
-            print("No documents found in Firestore, falling back to JSON file")
-            with open('mocks/safety_response_log.json', 'r') as f:
-                all_data = json.load(f)
-
-                # Filter out records where user_id is USR01235
-                filtered_data = [
-                    record for record in all_data
-                    if record.get('user_id') != 'USR01235'
-                ]
-
-                # Sort by timestamp in descending order
-                sorted_data = sorted(
-                    filtered_data,
-                    key=lambda x: x.get('timestamp', ''),
-                    reverse=True
-                )
-
-                return jsonify(user_data=sorted_data)
+        return jsonify(user_data=sorted_data)
 
     except Exception as e:
+        import traceback
+        error_traceback = traceback.format_exc()
         print(f"Error in safety_check: {str(e)}")
+        print(f"Traceback: {error_traceback}")
         return jsonify(error=f'An unexpected error occurred: {str(e)}'), 500
 
 
@@ -170,7 +160,7 @@ def safety_post():
         }
 
         # Add data to Firestore
-        db.collection('safety_response_log').add(safety_data)
+        db.collection('safety_response_logs').add(safety_data)
 
         return jsonify({
             'success': True,
@@ -193,3 +183,14 @@ def api(req: https_fn.Request) -> https_fn.Response:
         return app.full_dispatch_request()
 
 # http://127.0.0.1:5001/ai-hackathon-202503/us-central1/api/
+
+# Test function for direct execution
+if __name__ == "__main__":
+    print("Testing safety_check function directly...")
+
+    # Call the safety_check function
+    response = safety_check()
+
+    # Print the response
+    print("Response:")
+    print(response.get_data(as_text=True))
